@@ -201,7 +201,7 @@ def rolling_volatility_regimes(returns, window=60, threshold=None):
 
 #E. Liquidity and Microstructure
 def rolling_avg_dollar_volume(df, window=60):
-    print(df)
+    
     """
     Rolling average daily dollar volume for liquidity screening.
     """

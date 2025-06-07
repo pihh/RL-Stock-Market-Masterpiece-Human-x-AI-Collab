@@ -34,7 +34,9 @@ def generate_universe_easiness_report(
     ohlcv_df,
     tickers,
     window_length=60,
-    metrics=("rolling_sharpe", "rolling_r2", "rolling_info_ratio", "rolling_autocorr","rolling_sortino","rolling_max_rdawdown","rolling_calmar","rolling_hurst","rolling_apen","rolling_variacne_ratio","rolling_predictive_r2","rolling_hmm_loglik","rolling_volatility_regimes","rolling_avg_dollar_volume","rolling_spread_proxy"),
+    metrics=("rolling_sharpe", "rolling_r2", "rolling_info_ratio", "rolling_autocorr","rolling_sortino","rolling_max_drawdown","rolling_calmar","rolling_hurst","rolling_apen","rolling_variance_ratio",
+             #"rolling_predictive_r2",
+             "rolling_hmm_loglik","rolling_volatility_regimes","rolling_avg_dollar_volume","rolling_spread_proxy"),
     target="return_1d",
     benchmark_col="market_return_1d",
     visualize=True,
@@ -101,8 +103,8 @@ def generate_universe_easiness_report(
                     base["calmar"]= rolling_calmar(df[target],window=window_length)
                 elif metric == "rolling_hurst":
                     base["hurst"]= rolling_hurst(df[target],window=window_length)
-                elif metric == "rollng_apen":
-                    base["aprox_entropy"]= rollng_apen(df[target],window=window_length)
+                elif metric == "rolling_apen":
+                    base["aprox_entropy"]= rolling_apen(df[target],window=window_length)
                 elif metric == "rolling_variance_ratio":
                     base["variance_ratio"]= rolling_variance_ratio(df[target],window=window_length)
                 #elif metric == "rolling_predictive_r2":
@@ -112,9 +114,9 @@ def generate_universe_easiness_report(
                 elif metric == "rolling_volatility_regimes":
                     base["volatility_regimes"]= rolling_volatility_regimes(df[target],window=window_length)
                 elif metric == "rolling_avg_dollar_volume":
-                    base["avg_dollar_volume"]= rolling_avg_dollar_volume(df[target],window=window_length)
+                    base["avg_dollar_volume"]= rolling_avg_dollar_volume(df,window=window_length)
                 elif metric == "rolling_spread_proxy":
-                    base["spread_proxy"]= rolling_spread_proxy(df[target],window=window_length)
+                    base["spread_proxy"]= rolling_spread_proxy(df,window=window_length)
                 
                 
                 
@@ -133,6 +135,7 @@ def generate_universe_easiness_report(
             #all_metrics.to_csv(save_csv_path, index=False)
             print(f"Saved all metrics to {csv_path} (config hash: {config_hash})")
             #print(f"Saved all metrics to {save_csv_path}")
+            
     all_metrics.dropna(inplace=True)
     
     if visualize:
