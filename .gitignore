@@ -2,7 +2,9 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
+models/*  
+models/checkpoints/*
+models/checkedout/*
 # Data files
 data/
 *.csv
