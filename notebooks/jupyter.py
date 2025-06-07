@@ -2,6 +2,8 @@
 
 import sys
 import os
+import os
+os.environ["OMP_NUM_THREADS"] = "1"
 
 def add_project_root_to_path(root_folder_name="RL-Stock-Market-Masterpiece-Human-x-AI-Collab"):
     current_path = os.path.abspath(os.getcwd())

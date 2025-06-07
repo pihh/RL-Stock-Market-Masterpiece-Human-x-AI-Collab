@@ -7,7 +7,7 @@ from tqdm import tqdm
 from src.data.utils import deep_hash
 from .visualize import plot_heatmap
 from .easiness import (
-    rolling_sharpe, rolling_r2, rolling_info_ratio, rolling_autocorr
+    rolling_sharpe, rolling_r2, rolling_info_ratio, rolling_autocorr,rolling_sortino,rolling_max_drawdown,rolling_calmar,rolling_hurst,rolling_apen,rolling_variance_ratio,rolling_predictive_r2,rolling_hmm_loglik,rolling_volatility_regimes,rolling_avg_dollar_volume,rolling_spread_proxy
 )
 
 # Registry for available metrics—add more as you invent them!
@@ -16,14 +16,25 @@ METRIC_FUNCTIONS = {
     "rolling_r2": rolling_r2,
     "rolling_info_ratio": rolling_info_ratio,
     "rolling_autocorr": rolling_autocorr,
-    # Add more: "rolling_entropy": rolling_entropy, etc.
+    "rolling_sortino":rolling_sortino,
+    "rolling_max_drawdown":rolling_max_drawdown,
+    "rolling_calmar":rolling_calmar,
+    "rolling_hurst":rolling_hurst,
+    "rolling_apen":rolling_apen,
+    "rolling_variance_ratio":rolling_variance_ratio,
+    "rolling_predictive_r2":rolling_predictive_r2,
+    "rolling_hmm_loglik":rolling_hmm_loglik,
+    "rolling_volatility_regimes":rolling_volatility_regimes,
+    "rolling_avg_dollar_volume":rolling_avg_dollar_volume,
+    "rolling_spread_proxy":rolling_spread_proxy
+
 }
 
 def generate_universe_easiness_report(
     ohlcv_df,
     tickers,
     window_length=60,
-    metrics=("rolling_sharpe", "rolling_r2", "rolling_info_ratio", "rolling_autocorr"),
+    metrics=("rolling_sharpe", "rolling_r2", "rolling_info_ratio", "rolling_autocorr","rolling_sortino","rolling_max_rdawdown","rolling_calmar","rolling_hurst","rolling_apen","rolling_variacne_ratio","rolling_predictive_r2","rolling_hmm_loglik","rolling_volatility_regimes","rolling_avg_dollar_volume","rolling_spread_proxy"),
     target="return_1d",
     benchmark_col="market_return_1d",
     visualize=True,
@@ -82,6 +93,31 @@ def generate_universe_easiness_report(
                     base['sharpe'] = rolling_sharpe(df[target], window_length)
                 elif metric == "rolling_r2":
                     base['r2'] = rolling_r2(df[target], window_length)
+                elif metric == "rolling_sortino":
+                    base["sortino"]= rolling_sortino(df[target],window=window_length)
+                elif metric == "rolling_max_rawdown":
+                    base["max_drawdown"]= rolling_max_drawdown(df[target],window=window_length)
+                elif metric == "rolling_calmar":
+                    base["calmar"]= rolling_calmar(df[target],window=window_length)
+                elif metric == "rolling_hurst":
+                    base["hurst"]= rolling_hurst(df[target],window=window_length)
+                elif metric == "rollng_apen":
+                    base["aprox_entropy"]= rollng_apen(df[target],window=window_length)
+                elif metric == "rolling_variance_ratio":
+                    base["variance_ratio"]= rolling_variance_ratio(df[target],window=window_length)
+                #elif metric == "rolling_predictive_r2":
+                #    base["predictive_r2"]= rolling_predictive_r2(df[target],window=window_length,features=)
+                elif metric == "rolling_hmm_loglik":
+                    base["hmm_loglik"]= rolling_hmm_loglik(df[target],window=window_length)
+                elif metric == "rolling_volatility_regimes":
+                    base["volatility_regimes"]= rolling_volatility_regimes(df[target],window=window_length)
+                elif metric == "rolling_avg_dollar_volume":
+                    base["avg_dollar_volume"]= rolling_avg_dollar_volume(df[target],window=window_length)
+                elif metric == "rolling_spread_proxy":
+                    base["spread_proxy"]= rolling_spread_proxy(df[target],window=window_length)
+                
+                
+                
                 # You can add more metrics here
             if cutoff_start_date is not None:
                 base = base[base['date'] >= cutoff_start_date]
