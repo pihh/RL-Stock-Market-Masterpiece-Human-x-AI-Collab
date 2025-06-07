@@ -6,6 +6,7 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression
 from hmmlearn.hmm import GaussianHMM
 from sklearn.ensemble import RandomForestRegressor
+
 def rolling_sharpe(returns, window=60):
     """
     Rolling Sharpe ratio for a return series.
