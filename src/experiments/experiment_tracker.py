@@ -14,7 +14,7 @@ def deep_hash(config: Dict) -> int:
 
 # Configurable paths ========================
 EXPERIMENT_DB = os.getenv("EXPERIMENT_DB", "rl_trading.db")
-EXPERIMENT_CSV = os.getenv("EXPERIMENT_CSV", "experiments/research-and-development.csv")
+EXPERIMENT_CSV = os.getenv("EXPERIMENT_CSV", "../data/experiments/research-and-development.csv")
 
 conn = sqlite3.connect(EXPERIMENT_DB)
 

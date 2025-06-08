@@ -1,12 +1,32 @@
-import random
-import numpy as np
-import torch
 import os
+import torch
+import random
+import requests
+import numpy as np
 import multiprocessing
+
 from os.path import join, dirname
 from dotenv import load_dotenv
 
 SEED = 314
+NTFY_TOPIC ="pihh-trading-test"
+
+def notify(message,title="Something happened",topic=NTFY_TOPIC,level="info"):
+    
+    LEVELS = dict()
+    LEVELS['info'] = "loudspeaker"
+    LEVELS['success'] = "+1,tada"
+    LEVELS['warning']= "warning,skull"
+    LEVELS['danger'] = "-1,rotating_light"
+    
+    requests.post(f"https://ntfy.sh/{topic}",
+        data=message,
+        headers={
+            "Title": title,
+            #"Priority": "urgent",
+            "Tags": LEVELS[level]
+        })
+
 
 def load_environment():
     """
