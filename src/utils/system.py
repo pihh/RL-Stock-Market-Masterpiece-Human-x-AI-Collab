@@ -27,6 +27,17 @@ def notify(message,title="Something happened",topic=NTFY_TOPIC,level="info"):
             "Tags": LEVELS[level]
         })
 
+class Notify:
+    def __init__(self,project_name):
+        self.project_name = project_name
+    def info(message):
+        notify(message,self.project_name,level="info")
+    def success(message):
+        notify(message,self.project_name,level="success")
+    def warning(message):
+        notify(message,self.project_name,level="warning")
+    def danger(message):
+        notify(message,self.project_name,level="danger")
 
 def load_environment():
     """

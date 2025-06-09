@@ -40,3 +40,9 @@ Watch as a human and an AI build, break, and (hopefully) beat the market—toget
 
 > _If you’re reading this and want to contribute or just follow along, check out the Issues, Discussions, or open a PR!_
 
+## Key Findings (as of June 2025)
+
+- Predictability via plain R² has low generalization across months (R²_train vs R²_test < 0.2)
+- Using residual autocorrelation as a signal improves meta-model recall by +15%
+- Stocks labeled as "easy" by tiny RL agents also yield higher Sharpe when used in full-scale RL training
+- Contrastive predictability ranking outperforms direct R² regression when applied to month pairs
