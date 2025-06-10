@@ -1,6 +1,5 @@
 import pandas as pd
 from sklearn.preprocessing import  RobustScaler,MinMaxScaler
-from src.utils.d    
 
 # Default central tendency measurement 
 def mean_policy(arr,span=5):
