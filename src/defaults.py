@@ -1,14 +1,28 @@
 import pandas as pd
-def mean_policy(arr):
+from sklearn.preprocessing import  RobustScaler,MinMaxScaler
+from src.utils.d    
+
+# Default central tendency measurement 
+def mean_policy(arr,span=5):
     # return np.median(arr)
-    return pd.Series(arr).ewm(span=5).mean().iloc[-1]
+    return pd.Series(arr).ewm(span=span).mean().iloc[-1]
 
+def default_central_tendecy_measure(arr):
+    # return np.median(arr)
+    return mean_policy(arr)
 
-EPISODE_LENGTH = 100
+DEFAULT_REGULAR_SCALER = MinMaxScaler
+DEFAULT_SENSITIVE_SCALER = RobustScaler
+DEFAULT_EPISODE_LENGTH = 100
+
+EPISODE_LENGTH = DEFAULT_EPISODE_LENGTH
 
 EXCLUDED_TICKERS = ['CEG', 'GEHC', 'GEV', 'KVUE', 'SOLV']
 EXCLUDED_TICKERS.sort()
 
+TOP2_STOCK_BY_SECTOR_DICT = {
+    
+}
 TOP2_STOCK_BY_SECTOR = [
     "AAPL","MSFT",
     "JPM","V",
