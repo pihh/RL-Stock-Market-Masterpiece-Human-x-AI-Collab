@@ -30,13 +30,13 @@ def notify(message,title="Something happened",topic=NTFY_TOPIC,level="info"):
 class Notify:
     def __init__(self,project_name):
         self.project_name = project_name
-    def info(message):
+    def info(self,message):
         notify(message,self.project_name,level="info")
-    def success(message):
+    def success(self,message):
         notify(message,self.project_name,level="success")
-    def warning(message):
-        notify(message,self.project_name,level="warning")
-    def danger(message):
+    def warning(self,message):
+        notify(self,message,self.project_name,level="warning")
+    def danger(self,message):
         notify(message,self.project_name,level="danger")
 
 def load_environment():
