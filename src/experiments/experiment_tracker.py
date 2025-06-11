@@ -38,7 +38,11 @@ class ExperimentTracker:
         self.csv_path = EXPERIMENT_CSV
         self.train_episode_sequences = train_episode_sequences or []
         self.test_episode_sequences = test_episode_sequences or []
+        self.run_hash = ""
 
+    def set_hash(self,config):
+        self.run_hash = deep_hash(config)
+        
     def find_or_create_sequences(self, config: Dict, env) -> bool:
         """
         Loads or generates episode sequences for this config.
