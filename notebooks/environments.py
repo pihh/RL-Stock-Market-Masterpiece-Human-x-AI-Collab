@@ -14,6 +14,7 @@ class PositionTradingEnv(gym.Env):
         n_timesteps: int = 60,
         lookback: int = 0,
         seed: int = 42,
+        start_idx = None
     ):
         super().__init__()
         self.full_df = full_df.copy()
@@ -25,6 +26,7 @@ class PositionTradingEnv(gym.Env):
         self.observation_space = gym.spaces.Box(low=0, high=np.inf, shape=(1,), dtype=np.float32)
         self.episode_df = None
         self.step_idx = 0
+        self.fixed_start_idx = start_idx  # store the user-specified start index
         self._prepare_ticker_df()
         self._resample_episode()
 
@@ -51,10 +53,22 @@ class PositionTradingEnv(gym.Env):
         if not valid_starts:
             raise ValueError("No valid episodes found with the current constraints.")
 
-        self.start_idx = self.random_state.choice(valid_starts)
+        if self.fixed_start_idx is not None:
+            # Use the specified start index if it's valid
+            chosen_idx = self.fixed_start_idx
+            # Optionally, verify that chosen_idx is a valid start (e.g., in valid_starts)
+            if chosen_idx not in valid_starts:
+                raise ValueError(f"Provided start_idx {chosen_idx} is not a valid episode start.")
+        else:
+            # Randomly select a start index as before
+            chosen_idx = self.random_state.choice(valid_starts)
+            
+        self.start_idx = chosen_idx
         self.end_idx = self.start_idx + self.n_timesteps - 1
+        if self.end_idx >= len(self.df):
+            raise ValueError("Episode end index out of range (start_idx too close to end).")
         self.lookback_idx = max(0, self.start_idx - self.lookback)
-        self.episode_df = self.df.iloc[self.lookback_idx:self.end_idx + 1].reset_index(drop=True)
+        self.episode_df = self.df.iloc[self.lookback_idx : self.end_idx + 1].reset_index(drop=True)
 
         # Set prices used for reward logic
         self.prices = self.episode_df["close"].values
@@ -66,9 +80,14 @@ class PositionTradingEnv(gym.Env):
         self.step_weights = [w / total if total > 0 else 1 / (len(raw_weights)) for w in raw_weights]
 
     def reset(self, *, seed=None, options=None):
-        if seed is not None:
-            self.random_state.seed(seed)
-        self._resample_episode()
+        if self.fixed_start_idx is not None:
+            
+            # Maybe just reuse the current episode if already set, or call _resample_episode()
+            # which in turn will use the fixed_start_idx (since we added that logic).
+            self._resample_episode()
+        else:
+            self._resample_episode()
+        #self._resample_episode()
         self.step_idx = self.lookback
         self.position = 0
         self.total_reward = 0.0

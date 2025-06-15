@@ -14,6 +14,8 @@ def sample_valid_episodes(df, ticker, n_timesteps=60, lookback=0, episodes=30, s
     df = df.sort_values('date')
     df['date'] = pd.to_datetime(df['date'])
 
+    df = df.reset_index(drop=True)  
+
     mondays = df[df['date'].dt.weekday == 0]
     valid_starts = []
 
