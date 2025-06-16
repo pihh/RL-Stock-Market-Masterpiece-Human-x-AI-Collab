@@ -1,10 +1,9 @@
-import gymnasium as gym
-import numpy as np
-
-import gymnasium as gym
 import numpy as np
 import pandas as pd
+import gymnasium as gym
 from datetime import timedelta
+
+
 
 class PositionTradingEnv(gym.Env):
     def __init__(
@@ -50,16 +49,16 @@ class PositionTradingEnv(gym.Env):
             if (ep_slice["symbol"].nunique() == 1) and (ep_slice["date"].is_monotonic_increasing):
                 valid_starts.append(start_idx)
 
-        if not valid_starts:
-            raise ValueError("No valid episodes found with the current constraints.")
+       
 
         if self.fixed_start_idx is not None:
             # Use the specified start index if it's valid
             chosen_idx = self.fixed_start_idx
             # Optionally, verify that chosen_idx is a valid start (e.g., in valid_starts)
-            if chosen_idx not in valid_starts:
-                raise ValueError(f"Provided start_idx {chosen_idx} is not a valid episode start.")
+            
         else:
+            if not valid_starts :
+                raise ValueError("No valid episodes found with the current constraints.")
             # Randomly select a start index as before
             chosen_idx = self.random_state.choice(valid_starts)
             
@@ -129,6 +128,85 @@ class PositionTradingEnv(gym.Env):
         obs = np.array([self.prices[min(self.step_idx, len(self.prices) - 1)]], dtype=np.float32)
 
         return obs, scaled_reward, terminated, truncated, {}
+
+
+class PositionTradingEnvV1(PositionTradingEnv):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.last_actions = [0, 0, 0]  # history of last 3 actions
+        self.entry_price = 0
+        self.holding_time = 0
+
+        obs_dim = 5 + 5 + 6  # core + day_of_week (5) + last_actions (3 x 2 one-hot)
+        self.observation_space = gym.spaces.Box(low=-np.inf, high=np.inf, shape=(obs_dim,), dtype=np.float32)
+
+    def reset(self, *, seed=None, options=None):
+        super().reset(seed=seed, options=options)
+        self.last_actions = [0, 0, 0]
+        self.entry_price = self.prices[self.step_idx]
+        self.holding_time = 0
+        return self._get_observation(), {}
+
+    def step(self, action):
+        obs, reward, terminated, truncated, info = super().step(action)
+
+        if action == 1:
+            if self.position == 0:  # Enter long
+                self.entry_price = self.prices[self.step_idx]
+                self.holding_time = 0
+            else:  # Exit
+                self.entry_price = 0
+                self.holding_time = 0
+        elif self.position == 1:
+            self.holding_time += 1
+
+        self.last_actions = self.last_actions[1:] + [action]
+        return self._get_observation(), reward, terminated, truncated, info
+
+    def _get_observation(self):
+        price_now = self.prices[self.step_idx]
+
+        # If in position, use true entry price; otherwise, use current price as neutral baseline
+        entry_price = self.entry_price if self.position else price_now
+
+        # Safe PNL and ratio computation
+        if entry_price > 0:
+            pnl = (price_now - entry_price) / entry_price
+            price_ratio = price_now / entry_price
+        else:
+            pnl = 0.0
+            price_ratio = 1.0
+
+        # Rolling return
+        window_start = max(0, self.step_idx - 5)
+        if self.step_idx > window_start:
+            price_slice = self.prices[window_start:self.step_idx + 1]
+            rolling_ret = np.mean(np.diff(price_slice) / price_slice[:-1])
+        else:
+            rolling_ret = 0.0
+
+        # One-hot encode day of week
+        day = int(self.episode_df.iloc[self.step_idx]["day_of_week"])
+        day_one_hot = np.zeros(5)
+        day_one_hot[day] = 1
+
+        # One-hot encode last 3 actions
+        action_onehots = []
+        for a in self.last_actions:
+            onehot = np.zeros(2)
+            onehot[a] = 1
+            action_onehots.extend(onehot)
+
+        obs = np.array([
+            self.position,
+            self.holding_time,
+            pnl,
+            price_ratio,
+            rolling_ret,
+            *day_one_hot,
+            *action_onehots
+        ], dtype=np.float32)
+        return obs
 
 
 
