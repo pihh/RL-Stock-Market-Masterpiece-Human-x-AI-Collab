@@ -18,7 +18,8 @@ class PositionTradingEnv(gym.Env):
         n_timesteps: int = 60,
         lookback: int = 0,
         seed: int = 42,
-        start_idx=None
+        start_idx=None,
+        feature_cols=None, 
     ):
         super().__init__()
         self.full_df = full_df.copy()
@@ -30,7 +31,7 @@ class PositionTradingEnv(gym.Env):
         self.action_space = gym.spaces.Discrete(2)  # 0 = Flat, 1 = Long
         self.observation_space = gym.spaces.Box(low=0, high=np.inf, shape=(len(market_features),), dtype=np.float32)
         self.fixed_start_idx = start_idx
-        
+        self.feature_cols = feature_cols
         self.market_progress=[]
         self.wallet_progress=[]
         self.alpha_progress=[]
