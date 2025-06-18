@@ -35,9 +35,14 @@ class PositionTradingEnv(gym.Env):
         self.market_progress=[]
         self.wallet_progress=[]
         self.alpha_progress=[]
+        self.actions = []
         self.wallet = 1
         self.entry_price = 1
         self.market_entry_price = 1
+        
+        self.total_trades = 0
+        self.success_trades = 0
+        self.failed_trades = 0
          
         self._prepare_ticker_df()
         self._resample_episode()
@@ -93,6 +98,10 @@ class PositionTradingEnv(gym.Env):
         self.alpha_progress=[]
         self.market_entry_price = self.prices[0]
         
+        self.total_trades = 0
+        self.success_trades = 0
+        self.failed_trades = 0
+        
         obs = np.array(self.episode_values[self.step_idx], dtype=np.float32)
         return obs, {}
 
@@ -108,6 +117,11 @@ class PositionTradingEnv(gym.Env):
         elif self.position == 1 and action == 0 and self.entry_price >0:
             wallet = curr_price/self.entry_price
             self.entry_price = 0
+            self.total_trades +=1
+            if wallet >=1:
+                self.success_trades += 1
+            else:
+                self.failed_trades +=1
             
         self.position = action
         # Calculate reward *before* updating position
