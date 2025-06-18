@@ -128,8 +128,12 @@ class PositionTradingEnv(gym.Env):
         weight = self.step_weights[curr_idx - self.lookback] if curr_idx - self.lookback < len(self.step_weights) else 0
         if self.position == 1:
             agent_reward = weight * np.sign(price_diff) #price_diff
+            if price_diff <0:
+                agent_reward -=0.005
         else:
             agent_reward = -weight * np.sign(price_diff) #-price_diff
+            if price_diff >0:
+                agent_reward -=0.005
         step_score = agent_reward 
         scaled_reward = step_score * weight * 100
 
