@@ -125,18 +125,22 @@ class PositionTradingEnv(gym.Env):
             
         self.position = action
         # Calculate reward *before* updating position
+        stale_penalty = False
         weight = self.step_weights[curr_idx - self.lookback] if curr_idx - self.lookback < len(self.step_weights) else 0
         if self.position == 1:
             agent_reward = weight * np.sign(price_diff) #price_diff
             if price_diff <0:
-                agent_reward -=0.005
+                stale_penalty=True
+                #agent_reward -=0.01
         else:
             agent_reward = -weight * np.sign(price_diff) #-price_diff
             if price_diff >0:
-                agent_reward -=0.005
+                stale_penalty=True
+                #agent_reward -=0.01
         step_score = agent_reward 
         scaled_reward = step_score * weight * 100
-
+        if stale_penalty:
+            scaled_reward -=0.005
         self.total_reward += scaled_reward
         self.rewards.append(self.total_reward)
         self.actions.append(self.position)
@@ -235,7 +239,7 @@ class PositionTradingEnvV1(PositionTradingEnv):
         ], dtype=np.float32)
         return obs
 
-class PositionTradingEnvV2(PositionTradingEnv):
+class PositionTradingEnvV2(PositionTradingEnvV1):
     """
     PositionTradingEnvV2
     ---------------------
