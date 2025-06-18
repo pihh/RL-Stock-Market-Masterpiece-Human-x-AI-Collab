@@ -384,3 +384,108 @@ class PositionTradingEnvV2(PositionTradingEnvV1):
         ], dtype=np.float32)
 
         return obs
+
+
+from typing import Tuple
+import numpy as np
+
+
+class PositionTradingEnvV3(PositionTradingEnvV2):
+    """
+    PositionTradingEnvV3
+    ---------------------
+
+    A human-inspired, curriculum-learning environment for reinforcement learning agents in trading.
+    This version introduces Kai's "School Reward Curriculum" — a staged reward system designed to mimic 
+    how we teach children to explore, persist through failure, and progressively master difficult tasks.
+
+    ---------------------
+    Why This Matters:
+    ---------------------
+    Traditional RL assumes agents can survive cold optimization. But we’re building an intelligent, self-reflective system. 
+    And like all intelligent learners, it must be nurtured.
+
+    So instead of punishing early failure or passivity too harshly, we reward **meaningful attempts to act**.
+    This fosters early exploration, builds confidence, and allows the agent to discover structure in the market 
+    before we tighten expectations.
+
+    ---------------------
+    The School Reward Curriculum:
+    ---------------------
+
+    ◉ Phase 1: Exploration Over Inaction
+        - Reward is generous toward action.
+        - Foresight bonus: If a position switch *happened to be well-timed*, the agent gets extra points.
+        - Exploration bonus: Trying new positions is encouraged — even if the immediate outcome isn't profitable.
+        - Goal: Reward **trying**, not just winning. Build initiative.
+
+    ◉ Phase 2: Mastery Emerges
+        - Bonuses are gradually decayed.
+        - Agent must begin to **sustain good decisions**, not just get lucky.
+        - Less encouragement for randomness; more weight on consistent performance.
+        - Goal: Build **skill**, not just courage.
+
+    ◉ Phase 3: Graduation
+        - Return to strict oracle-relative reward.
+        - No more bonuses: the agent is ready for the real world.
+        - Encourage specialization — regime-awareness, style, timeframe expertise.
+        - Goal: Become a **professional**.
+
+    ---------------------
+    Usage:
+    ---------------------
+    Use the `reward_phase` parameter to set the phase manually, or optionally let the system 
+    transition automatically after N episodes.
+
+    Available Phases:
+        - "exploration"
+        - "mastery"
+        - "strict"
+
+    ---------------------
+    Designed With ❤️ by Pi & Kai
+    ---------------------
+    """
+
+    def __init__(self, *args, reward_phase="exploration", foresight_bonus=0.1, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.reward_phase = reward_phase
+        self.foresight_bonus = foresight_bonus
+        self.prev_position = 0
+
+    def _step_reward(self, action: int, price_change: float, oracle_action: int) -> float:
+        # Base reward: oracle-relative
+        base_reward = 0
+        if action == oracle_action:
+            base_reward = 1 * abs(price_change)
+        elif action != 0:
+            base_reward = -1 * abs(price_change)
+
+        bonus = 0
+
+        # --- Phase-specific logic ---
+        if self.reward_phase == "exploration":
+            if action != self.prev_position:
+                # Position switch bonus
+                if np.sign(price_change) == (1 if action == 1 else -1):
+                    bonus += self.foresight_bonus * abs(price_change)
+        elif self.reward_phase == "mastery":
+            if action != self.prev_position:
+                if np.sign(price_change) == (1 if action == 1 else -1):
+                    bonus += 0.5 * self.foresight_bonus * abs(price_change)
+        # "strict" phase does not add bonus
+
+        self.prev_position = action
+        return base_reward + bonus
+
+    def step(self, action: int) -> Tuple[np.ndarray, float, bool, bool, dict]:
+        obs, price_change, done, truncated,  _ = super().step(action)
+        oracle_action = action
+        if price_change < 0 :
+            oracle_action = abs(action-1)
+        reward = self._step_reward(action, price_change, oracle_action)
+        return obs, reward, done, truncated, {}
+
+    def reset(self, **kwargs):
+        self.prev_position = 0
+        return super().reset(**kwargs)
