@@ -264,12 +264,14 @@ class EpisodeTracker:
             existing_id = self.find_by_hash(episode_config)
             if existing_id is not None:
                 episode_config['df']= symbol_df.iloc[:episode_config['df_end_iloc']].copy()
+                episode_config['id'] = existing_id
                 return episode_config | {"episode_id": existing_id}
 
             name = f"{ticker}_{target_date}_{mode}"
             new_id = self.insert(name, episode_config)
             
             episode_config['df']= symbol_df.iloc[:end_iloc].copy() 
+            episode_config['id'] = new_id
             return episode_config | {"episode_id": new_id}
         
 
@@ -319,6 +321,10 @@ class AgentTracker:
             )
         """)
 
+    def _filtered_config(self, config):
+        exclude_keys = {"verbose", "seed"}
+        return {k: v for k, v in config.items() if k not in exclude_keys}
+    
     def _sanitize_config(self, config):
         def convert(o):
             if isinstance(o, (np.integer, np.floating)):
@@ -327,6 +333,7 @@ class AgentTracker:
         return {k: convert(v) for k, v in config.items()}
 
     def _hash_config(self, model_class, policy_class, config):
+        config = self._filtered_config(config)
         config_str = json.dumps({
             "model_class": model_class,
             "policy_class": policy_class,
@@ -371,6 +378,8 @@ class AgentTracker:
     def findAgent(self, model_class, policy_class, config, name=None):
         if "ent_coef" not in config.keys():
             config["ent_coef"]=0.1
+        if "verbose" not in config.keys():
+            config["verbose"]=1
             
         existing_id = self.find_by_hash(model_class, policy_class, config)
         if existing_id:
