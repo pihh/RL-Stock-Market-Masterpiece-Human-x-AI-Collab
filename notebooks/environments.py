@@ -493,6 +493,49 @@ class PositionTradingEnvV3(PositionTradingEnvV2):
 
 
 
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import StandardScaler, RobustScaler, PowerTransformer
+from sklearn.compose import ColumnTransformer
+from scipy.stats import kurtosis, skew
+
+class AutoFeatureScaler:
+    def __init__(self):
+        self.column_scalers = {}
+
+    def _select_scaler(self, series: pd.Series):
+        skew_val = skew(series.dropna())
+        kurt_val = kurtosis(series.dropna())
+        range_val = series.max() - series.min()
+
+        # Heuristics
+        if abs(skew_val) > 2 or abs(kurt_val) > 10:
+            return PowerTransformer()  # handles high skew/kurt
+        elif abs(skew_val) > 1 or range_val > 1000:
+            return RobustScaler()  # handles mild skew or extreme values
+        else:
+            return StandardScaler()  # default
+
+    def fit(self, df: pd.DataFrame):
+        self.column_scalers = {}
+        for col in df.columns:
+            scaler = self._select_scaler(df[col])
+            scaler.fit(df[[col]])
+            self.column_scalers[col] = scaler
+
+    def transform(self, df: pd.DataFrame) -> np.ndarray:
+        transformed_cols = []
+        for col in df.columns:
+            scaler = self.column_scalers[col]
+            transformed = scaler.transform(df[[col]])
+            transformed_cols.append(transformed)
+        return np.hstack(transformed_cols)
+
+    def fit_transform(self, df: pd.DataFrame) -> np.ndarray:
+        self.fit(df)
+        return self.transform(df)
+
+
 class PositionTradingEnvV4(PositionTradingEnvV2):
     """
     PositionTradingEnvV4
@@ -505,7 +548,7 @@ class PositionTradingEnvV4(PositionTradingEnvV2):
     Designed With ❤️ by Pi & Kai
     ---------------------
     """
-    def __init__(self, *args, scaling_strategy="power", **kwargs):
+    def __init__(self, *args, scaling_strategy="auto", **kwargs):
         
         self.scaling_strategy = scaling_strategy
         self.scaler = None
@@ -531,8 +574,12 @@ class PositionTradingEnvV4(PositionTradingEnvV2):
             self.scaler = StandardScaler()
         elif self.scaling_strategy == "robust":
             self.scaler = RobustScaler()
-        else:
+        elif self.scaling_strategy =="auto":
+            self.scaler = AutoFeatureScaler()
+        else: 
             self.scaler = None
+        #self.scaler.fit(lookback_df[self.market_features])
+        #self.episode_values = self.scaler.transform(self.episode_df[self.market_features])
 
         # Apply scaling if applicable
         if self.scaler is not None:
