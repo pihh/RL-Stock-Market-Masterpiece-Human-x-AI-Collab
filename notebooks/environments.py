@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import gymnasium as gym
 from datetime import timedelta
+from sklearn.preprocessing import PowerTransformer, StandardScaler, RobustScaler
 
 
 class PositionTradingEnv(gym.Env):
@@ -489,3 +490,64 @@ class PositionTradingEnvV3(PositionTradingEnvV2):
     def reset(self, **kwargs):
         self.prev_position = 0
         return super().reset(**kwargs)
+
+
+
+class PositionTradingEnvV4(PositionTradingEnvV2):
+    """
+    PositionTradingEnvV4
+    ---------------------
+
+    Resamples the dataset based on the previous timeframe.
+    Ensures the train and test are done with similar data conditions
+
+    ---------------------
+    Designed With ❤️ by Pi & Kai
+    ---------------------
+    """
+    def __init__(self, *args, scaling_strategy="power", **kwargs):
+        
+        self.scaling_strategy = scaling_strategy
+        self.scaler = None
+        super().__init__(*args, **kwargs)
+        
+ 
+
+    def _resample_episode(self):
+        episode_start = self.fixed_start_idx
+        episode_end = self.fixed_start_idx + self.n_timesteps
+
+        self.episode_df = self.full_df.iloc[episode_start:episode_end].copy()
+
+        if self.n_timesteps > 0 and self.fixed_start_idx - self.n_timesteps > 0:
+            lookback_df = self.full_df.iloc[self.fixed_start_idx - self.n_timesteps: self.fixed_start_idx]
+        else:
+            lookback_df = self.episode_df.copy()  # fallback if no lookback
+
+        # Initialize scaler
+        if self.scaling_strategy == "power":
+            self.scaler = PowerTransformer()
+        elif self.scaling_strategy == "standard":
+            self.scaler = StandardScaler()
+        elif self.scaling_strategy == "robust":
+            self.scaler = RobustScaler()
+        else:
+            self.scaler = None
+
+        # Apply scaling if applicable
+        if self.scaler is not None:
+            try:
+                self.scaler.fit(lookback_df[self.market_features])
+                self.episode_values = self.scaler.transform(self.episode_df[self.market_features])
+            except Exception as e:
+                print(f"[!] Scaling failed: {e}, falling back to raw values")
+                self.episode_values = self.episode_df[self.market_features].values
+        else:
+            self.episode_values = self.episode_df[self.market_features].values
+
+        # 🔧 Fix: Add this line
+        self.prices = self.episode_df["close"].values
+        self._precompute_step_weights()
+
+    def get_scaler(self):
+        return self.scaler

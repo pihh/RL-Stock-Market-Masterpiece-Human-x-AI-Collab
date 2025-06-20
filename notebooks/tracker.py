@@ -60,13 +60,15 @@ class EnvironmentTracker:
             PositionTradingEnv,
             PositionTradingEnvV1,
             PositionTradingEnvV2,
-            PositionTradingEnvV3
+            PositionTradingEnvV3,
+            PositionTradingEnvV4,
         )
         version_map = {
             "v0": PositionTradingEnv,
             "v1": PositionTradingEnvV1,
             "v2": PositionTradingEnvV2,
-            "v3": PositionTradingEnvV3
+            "v3": PositionTradingEnvV3,
+            "v4": PositionTradingEnvV4,
         }
         if version not in version_map:
             raise ValueError(f"Unknown environment version: {version}")

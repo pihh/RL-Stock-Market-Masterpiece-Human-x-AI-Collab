@@ -4,6 +4,8 @@ import random
 import requests
 import numpy as np
 import multiprocessing
+import gymnasium as gym
+from stable_baselines3.common.utils import set_random_seed
 
 from os.path import join, dirname
 from dotenv import load_dotenv
@@ -79,22 +81,55 @@ def get_system_variables():
     }
 
 
-def set_seed(seed=314,environment="development"):
+# def set_seed(seed=314,environment="development"):
     
+#     if environment != "development":
+#         seed = random.randint(0, 2**16 - 1) # Fugi do 32 não sei pq não me parece bem
+    
+#     global SEED 
+#     SEED = seed
+#     random.seed(seed)
+#     np.random.seed(seed)
+#     torch.manual_seed(seed)
+#     if torch.cuda.is_available():
+#         torch.cuda.manual_seed_all(seed)
+    
+#     return SEED
+    
+def set_seed(seed=314, environment="development"):
     if environment != "development":
-        seed = random.randint(0, 2**16 - 1) # Fugi do 32 não sei pq não me parece bem
-    
+        seed = random.randint(0, 2**16 - 1)  # Dynamic seed for live settings
+
     global SEED 
     SEED = seed
+
+    # System-level reproducibility
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":16:8"  # Optional for CUDA determinism
+    os.environ["TRANSFORMERS_NO_TF"] = "1"
+
+    # Core libraries
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
-    
-    return SEED
-    
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+    try:
+        #gym.logger.set_level(gym.logger.DISABLED)  # optional: silence Gym logs
+        gym.utils.seeding.np_random(seed)
+    except Exception as e:
+        print(f"[Warning] Gym seed fallback: {e}")
 
+    # Stable-Baselines3
+    try:
+        set_random_seed(seed)
+    except Exception as e:
+        print(f"[Warning] SB3 seed fallback: {e}")
+
+    return seed
 
 def boot(seed=314):
     """Sets up the random seed across the system.
