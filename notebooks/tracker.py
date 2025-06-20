@@ -229,6 +229,9 @@ class EpisodeTracker:
         row = cursor.fetchone()
         return row[0] if row else None
 
+    def findById(self, id):
+        return self.load_instance(id)
+
     def load_instance(self, id):
         cursor = self.conn.cursor()
         cursor.execute(f"SELECT config_json FROM {self.table} WHERE id = ?", (id,))
