@@ -142,7 +142,7 @@ class EnvironmentTracker:
             for k,v in params.items():
                 if params[k] != None:
                     instance['config'][k]=v
-    
+     
             instance["environment"]= instance["environment"](full_df=df.copy(),**instance['config'])
             return instance
         if name is None:
@@ -151,7 +151,7 @@ class EnvironmentTracker:
         new_id = self.insert(name, version, config)
         instance = self.load_instance(new_id)
         instance['config'].update(config)
-        print(instance['config'],config)
+        #print(instance['config'],config)
         for k,v in params.items():
                 #print(k,v)
             if params[k] != None:

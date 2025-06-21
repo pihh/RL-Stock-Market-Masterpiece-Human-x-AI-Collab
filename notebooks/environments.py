@@ -25,6 +25,7 @@ class PositionTradingEnv(gym.Env):
         super().__init__()
         self.full_df = full_df.copy()
         self.ticker = ticker
+      
         self.n_timesteps = n_timesteps
         self.lookback = lookback
         self.market_features = market_features
@@ -548,6 +549,8 @@ class PositionTradingEnvV4(PositionTradingEnvV2):
     Designed With ❤️ by Pi & Kai
     ---------------------
     """
+    __version__ = 4
+        
     def __init__(self, *args, scaling_strategy="auto", **kwargs):
         
         self.scaling_strategy = scaling_strategy
@@ -555,15 +558,42 @@ class PositionTradingEnvV4(PositionTradingEnvV2):
         super().__init__(*args, **kwargs)
         
  
+    # def _prepare_ticker_df(self):
+    #         self.df = self.full_df[self.full_df['symbol'] == self.ticker].copy()
+    #         self.df = self.df.sort_values("date")
+    #         self.df["date"] = pd.to_datetime(self.df["date"])
+    #         self.df = self.df.reset_index(drop=True)
 
+    #     def _resample_episode(self):
+    #         mondays = self.df[self.df["date"].dt.weekday == 0].copy()
+    #         valid_starts = []
+    #         for date in mondays["date"]:
+    #             start_idx = self.df.index[self.df["date"] == date][0]
+    #             end_idx = start_idx + self.n_timesteps - 1
+    #             if end_idx >= len(self.df):
+    #                 continue
+    #             ep_slice = self.df.iloc[start_idx:end_idx + 1]
+    #             if (ep_slice["symbol"].nunique() == 1) and (ep_slice["date"].is_monotonic_increasing):
+    #                 valid_starts.append(start_idx)
+
+    #         chosen_idx = self.fixed_start_idx if self.fixed_start_idx is not None else self.random_state.choice(valid_starts)
+
+    #         self.start_idx = chosen_idx
+    #         self.end_idx = self.start_idx + self.n_timesteps - 1
+    #         self.lookback_idx = max(0, self.start_idx - self.lookback)
+    #         self.episode_df = self.df.iloc[self.lookback_idx: self.end_idx + 1].reset_index(drop=True)
+
+    #         self.prices = self.episode_df["close"].values
+    #         self.episode_values = self.episode_df[self.market_features].values
+    #         self._precompute_step_weights()
     def _resample_episode(self):
         episode_start = self.fixed_start_idx
         episode_end = self.fixed_start_idx + self.n_timesteps
 
-        self.episode_df = self.full_df.iloc[episode_start:episode_end].copy()
+        self.episode_df = self.df.iloc[episode_start:episode_end].copy()
 
         if self.n_timesteps > 0 and self.fixed_start_idx - self.n_timesteps > 0:
-            lookback_df = self.full_df.iloc[self.fixed_start_idx - self.n_timesteps: self.fixed_start_idx]
+            lookback_df = self.df.iloc[self.fixed_start_idx - self.n_timesteps: self.fixed_start_idx]
         else:
             lookback_df = self.episode_df.copy()  # fallback if no lookback
 
