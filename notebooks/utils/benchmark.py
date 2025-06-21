@@ -84,6 +84,56 @@ RUN_SETTINGS = {
     },
 }
 
+import os
+import json
+import hashlib
+from collections import defaultdict
+STORAGE_PATH = "data/experiments/episode_benchmark_engine/runs.csv"
+
+
+EXCLUDED_TICKERS = sorted(["CEG", "GEHC", "GEV", "KVUE", "SOLV"])
+
+CONFIG = {
+    "regressor": "RandomForestRegressor",
+    "n_estimators": 300,
+    "random_state": 314,
+    "transaction_cost": 0,
+}
+LOOKBACK = 0
+EPISODE_LENGTH = 50
+
+RUN_SETTINGS = {
+    "excluded_tickers": EXCLUDED_TICKERS,
+    "cv_folds": 3,
+    "lags": 5,
+    "seed": 314,
+    'total_timesteps':50_000,
+    "episode": {
+        "episode_length": EPISODE_LENGTH,
+        "lookback": LOOKBACK,
+    },
+    "environment": {
+        "market_features": ["close", "price_change", "volume_change"],
+        "version": "v2",
+        "lookback": LOOKBACK,
+        "episode_length": EPISODE_LENGTH,
+        "transaction_cost": 0,
+    },
+    "agent": {
+        "model_class": "PPO",
+        "policy_class": "MlpPolicy",
+        "config": {
+            "verbose": 1,
+            "ent_coef":0.1,
+            "policy_kwargs": 
+                {
+                
+                    "net_arch": [64, 64]
+                    }
+                },
+    },
+}
+
 
 class EpisodeBenchmark:
     def __init__(
@@ -223,6 +273,81 @@ class EpisodeBenchmark:
         return diagnostics
 
 
+    def correlation_with_test_result(self,test_result_feature="test_total_reward"):
+        pddf = self.completed_runs_df.copy()
+        
+        cols_to_drop = [col for col in pddf.columns if col.startswith('test_') and col != test_result_feature]
+        pddf_cleaned = pddf.drop(columns=cols_to_drop)
+
+        correlations = pddf_cleaned.corr(numeric_only=True)[test_result_feature].sort_values(ascending=False)
+        
+        return correlations
+    
+    def describe(self, feature =None):
+        descriptions = {
+            "resid_mean": 
+                "Mean of the residuals between agent and oracle/market.\n"
+                "- Ideal: Close to 0 (no bias).\n"
+                "- Positive: agent tends to overperform the benchmark.\n"
+                "- Negative: consistent underperformance.",
+
+            "resid_std": 
+                "Standard deviation of residuals (volatility of difference).\n"
+                "- Ideal: Low (stable excess performance).\n"
+                "- High: unstable or noisy relative performance.",
+
+            "resid_acf1": 
+                "Autocorrelation at lag 1 of residuals.\n"
+                "- Ideal: Close to 0 (no pattern).\n"
+                "- Positive: persistent patterns (possibly exploitable).\n"
+                "- Negative: mean-reverting behavior.",
+
+            "resid_min": 
+                "Minimum residual — worst case vs benchmark.\n"
+                "- Ideal: Not too negative.\n"
+                "- Negative: large underperformance at some point.",
+
+            "resid_max": 
+                "Maximum residual — best case vs benchmark.\n"
+                "- Ideal: High (agent strongly beats the benchmark).",
+
+            "resid_skew": 
+                "Skewness of residual distribution.\n"
+                "- Ideal: Slightly positive (more upside extremes).\n"
+                "- Negative: heavier downside risks.",
+
+            "resid_kurtosis": 
+                "Kurtosis of residuals — fat tails.\n"
+                "- Ideal: Moderate (3 is normal).\n"
+                "- High: rare but extreme performance differences.",
+
+            "resid_ljung_pval": 
+                "Ljung-Box test p-value for autocorrelation in residuals.\n"
+                "- Ideal: > 0.05 (no significant autocorrelation).\n"
+                "- Low: residuals have autocorrelation (potential inefficiency).",
+
+            "sharpe": 
+                "Sharpe ratio — risk-adjusted return.\n"
+                "- Ideal: High (>1 good, >2 excellent).\n"
+                "- Negative: losing money or volatile with low return.",
+
+            "sortino": 
+                "Sortino ratio — like Sharpe but penalizes only downside risk.\n"
+                "- Ideal: High (>1).\n"
+                "- More robust than Sharpe when upside is volatile.",
+
+            "calmar": 
+                "Calmar ratio — return / max drawdown.\n"
+                "- Ideal: High (>1).\n"
+                "- Penalizes deep losses more than volatility-based ratios.",
+        }
+        if feature !=None:
+            print(descriptions.get(feature, "No description available for this feature."))
+        else:
+            for k,v in descriptions.items():
+                print(v)
+                print('')
+                
     def run(self, tickers=None):
         # Configurations =============================
         config = self.config
@@ -365,3 +490,4 @@ class EpisodeBenchmark:
                     print(f"Skipping {symbol} {months[i]} due to error: {e}")
              
         return self.completed_runs_df    
+
